@@ -1,0 +1,45 @@
+@import url(purple.css);
+
+body {
+  font-size: 32px;
+  background: url('../../img/heroku-logo-light-234x60.png') 10px 95% no-repeat fixed white;
+}
+
+.reveal section h1 { margin-bottom: .25em; }
+.reveal section header { margin-bottom: .5em; }
+
+.reveal pre {
+  display: inline-block;
+  font-size: 0.75em;
+  width: 100%;
+  line-height: 1.4;
+}
+.reveal pre code {
+  color: #56565d;
+  background-color: #f2f2f3;
+  padding: 2px 4px;
+  max-height: 600px;
+}
+.reveal blockquote {
+  color: #56565d;
+  background-color: #f2f2f3;
+  font-style: normal;
+  padding: 20px;
+  margin: 0;
+  width: 100%;
+  text-align: left;
+}
+
+.reveal blockquote p {
+  line-height: 1.5em;
+}
+
+.reveal blockquote footer {
+  margin-top: 1em;
+  text-align: right;
+}
+
+.reveal blockquote p:first-child, .reveal blockquote p:last-child {
+  display: block;
+}
+

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>Realtime RESTful: Have your REST and push it too</title>
+
+    <meta name="author" content="David Gouldin">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="css/reveal.min.css">
+    <link rel="stylesheet" href="css/theme/heroku.css" id="theme">
+    <link rel="stylesheet" href="lib/css/highlight/github.css">
+    <style>
+    .light {
+      opacity: 0.5;
+    }
+    </style>
+
+    <script>
+      if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+      }
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+
+    <div class="reveal">
+      <div class="slides">
+        <section>
+          <header>
+            <h1>Realtime RESTful</h1>
+            <h3>Have your REST and push it too</h3>
+          </header>
+          <p>
+            by David Gouldin / <a href="http://twitter.com/dgouldin">@dgouldin</a>
+          </p>
+          <p><a href="http://realtime-restful.herokuapp.com/">realtime-restful.herokuapp.com</a></p>
+        </section>
+        <section>
+          <section>
+            <h2 class="light">the web is</h2>
+            <h1>service oriented</h1>
+          </section>
+          <section>
+            <header>
+              <h2>we've moved from this</h2>
+            </header>
+            <img src="img/lamp-stack.svg" height="600">
+            <aside class="notes">
+              <ul>
+                <li>Remember the days when you could describe your stack with an
+                  acronym?</li>
+                <li>1 data store, usually relational</li>
+                <li>request/response cycle ecapsulated all business logic</li>
+                <li>server-side views responsible for all content rendering</li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <header>
+              <h2>to this</h2>
+            </header>
+            <img src="img/soa-hell.png">
+            <!-- TODO: diagram of SOA with browser consumer -->
+          </section>
+          <section>
+            <header>
+              <h2>er, this</h2>
+            </header>
+            <img src="img/soa.svg" height="600">
+            <!-- TODO: diagram of SOA with browser consumer -->
+            <aside class="notes">
+              <ul>
+                <li>Services (mostly) talk HTTP to each other</li>
+                <li>Pubsub (usually via redis) allows efficient 1:many
+                  communication between services</li>
+                <li>MOST IMPORTANTLY: the web client is now just another
+                  service, a consumer of public services published by the
+                  server</li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>the shift was gradual</h2>
+            <aside class="notes">
+              <ul>
+                <li>First we published APIs for others ("platform play")</li>
+                <li>Then we began to consume those same APIs in native
+                  clients on other platforms (the rise of mobile)</li>
+                <li>Finally, we figured out how to effectively turn our web
+                  clients into service consumers as well (JS templating,
+                  client-side MVC, web components)</li>
+                <li>TL;DR: We've had plenty of time to understand and develop
+                  best practices around the way machines talk http to each
+                  other</li> <li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <header><h2>best practices</h2></header>
+            <img src="img/http-api-design-guide-toc.png">
+            <!-- TODO: gradient fade image -->
+          </section>
+          <section>
+            <h2>platform play is table stakes</h2>
+            <aside class="notes">
+              <ul>
+                <li>When we think about our own web applications as a network
+                  of services, the previously novel idea of "platform" becomes a
+                  given.</li>
+                <li>A public REST API service is no longer a bonus. It's now a
+                  core part of our application's architecture.</li>
+              </ul>
+          </section>
+        </section>
+        <section>
+          <section>
+            <h2 class="light">the web is</h2>
+            <h1>realtime</h1>
+          </section>
+          <section>
+            <h2>responsiveness is an expectation</h2>
+            <aside class="notes">
+              <ul>
+                <li>If your site looks like an application, users expect it to
+                  act like one</li>
+                <li>Fallacies of distributed computing mean nothing to
+                  users.</li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <header>
+              <h2>it's not as hard as it used to be</h2>
+            </header>
+            <img src="img/caniuse-websockets.png">
+            <aside class="notes">
+              <ul>
+                <li>In the past, the only way to push reliably was by supporting
+                multiple transports (long-polling, flash sockets, websockets,
+                etc)</li>
+                <li>Now, support for proper websockets is good enough to rely
+                on by itself.</li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>just because it's easy, doesn't mean it's easy to do right</h2>
+            <aside class="notes">
+              <ul>
+                <li>Think of a product you've built. Now think how a realtime
+                  streaming transport design might look for that product.</li>
+                <li>If you're like me, you immediately begin to think in terms
+                  of events and data payloads associated with event types.</li>
+                <li>Then you begin to think about the process of reacting to
+                  events in the inteface. How event publishing would propagate
+                  through client views and state.</li>
+                <li>Head hurting yet? Mine is.</li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>realtime transport design is not a solved problem</h2>
+            <aside class="notes">
+              <ul>
+                <li>I'd consider a technology "mature" when its usage patterns
+                  are well estalished and understood. The realtime web just
+                  isn't there yet.</li>
+              </ul>
+            </aside>
+          </section>
+        </section>
+        <section>
+          <section>
+            <h2 class="light">the web is</h2>
+            <h1>&hellip; complicated</h1>
+          </section>
+          <section>
+            <h2>platform 🆚 realtime</h2>
+            <aside class="notes">
+              <ul>
+                <li>You should probably be doing both</li>
+                <li>Commonly solved orthogonally, meaning:</li>
+                <li>they easily go out of sync</li>
+                <li>they have human resource contention</li>
+                <li>2x surface area for errors</li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>
+          </section>
+        </section>
+      </div>
+    </div>
+
+    <script src="lib/js/head.min.js"></script>
+    <script src="js/reveal.min.js"></script>
+
+    <script>
+
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+        theme: Reveal.getQueryHash().theme,
+        transition: Reveal.getQueryHash().transition || 'default',
+        dependencies: [
+          { src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+          { src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+          { src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+        ]
+      });
+
+    </script>
+
+  </body>
+</html>
