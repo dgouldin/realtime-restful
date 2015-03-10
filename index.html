@@ -149,6 +149,8 @@
               <h2>it's not as hard as it used to be</h2>
             </header>
             <img src="img/caniuse-websockets.png">
+            <a
+                 href="http://caniuse.com/#feat=websockets">http://caniuse.com/#feat=websockets</a>
             <aside class="notes">
               <ul>
                 <li>In the past, the only way to push reliably was by supporting
@@ -203,9 +205,92 @@
             </aside>
           </section>
           <section>
-            <h2>
+            <header>
+              <h2>common realtime solution</h2>
+            </header>
+            <img src="img/common-push-architecture.svg" height="600">
+            <aside class="notes">
+              <ul>
+                <li>Server side opt-in per event</li>
+                <li>Client side opt-in per event per component</li>
+                <li>That's a lot of code for each supported event!</li>
+              </ul>
+            </aside>
           </section>
         </section>
+        <section>
+          <section>
+            <h1>reframing the problem</h1>
+          </section>
+          <section>
+            <h2>events are a proxy for state change</h2>
+            <aside class="notes">
+              <ul>
+                <li>"X happened" is actually shorthand for "A, B, and C objects
+                have been mutated".</li>
+                <li>If instead of events, we simply enumerated all state
+                  mutations (including Nth degrees like aggregates), the event
+                  itself would be useless.</li>
+                <li>The reason we tend to think in terms of events is because it
+                  makes more sense to our causal-driven brains. Computers
+                  don't care about causality.</li>
+                <li>This creates an implicit contract based on derivation of
+                  cause-effect relationships in our code. That's why it's so
+                  difficult to understand, maintain, and untangle!</li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>isolating data mutation is key</h2>
+            <aside class="notes">
+              <ul>
+                <li>If we agree that state change is what we're targeting, all
+                  we need is a way to know about all operations which change
+                  state.</li>
+                <li>Once we isolate mutation of data, we have the all the
+                  hooks necessary to enumerate mutations explicitly.</li>
+                <li>Our streaming contract can then become both comprehensible and
+                  maintainable.</li>
+                <li>No more spooky action at a distance where the name of an
+                  event type means any number of side-effects to our client
+                  interface.</li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>REST endpoints fully describe application state</h2>
+            <aside class="notes">
+              <ul>
+                <li>If this wasn't true, you couldn't have built your app with
+                  just the API.</li>
+                <li>This API is an existing and complete contract that already
+                  has a client consumer.</li>
+                <li>Both of these make it the perfect choice for a realtime
+                  streaming contract as well.</li>
+              </ul>
+          </section>
+        </section>
+        <section>
+          <section>
+            <h1>a better way</h1>
+          </section>
+          <section>
+            <h2>realtime producer = REST consumer</h2>
+          </section>
+        </section>
+        <section>
+          <section>
+            <h1>problems</h1>
+          </section>
+          <section>
+            <h2>authentication</h2>
+          </section>
+          <section>
+            <h2>what API endpoints changed?</h2>
+          </section>
+          <section>
+            <h2>performance</h2>
+          </section>
       </div>
     </div>
 
