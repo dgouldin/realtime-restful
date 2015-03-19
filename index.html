@@ -38,7 +38,6 @@
   </head>
 
   <body>
-
     <div class="reveal">
       <div class="slides">
         <section>
@@ -53,8 +52,71 @@
         </section>
         <section>
           <section>
+            <h1>origins</h1>
+            <aside class="notes">
+              <ul>
+                <li>Before we dig in, let me provide some context around the
+                  problem we were trying to solve at Heroku that led to this
+                  talk.</li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>heroku connect</h2>
+            <img src="img/hc.png">
+            <aside class="notes">
+              <ul>
+                <li>data sync product with a dashboard web UI</li>
+                <li>gigantic state machine</li>
+                <li>lots of state changes happen async on the backend</li>
+                <li>customer trust of the product relies on
+                  communication/transparency</li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>polling wasn't cutting it</h2>
+            <aside class="notes">
+              <ul>
+                <li>constant feedback from customers: I can't tell what's
+                  happening</li>
+                <li>inefficient API usage (lots of no-op calls)</li>
+                <li>scaling problems (needed to scale up an order of magnitude)</li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>defining the problem</h2>
+            <!-- TODO: come up with something better than this ^ -->
+            <aside class="notes">
+              <ul>
+                <li>we had a REST API</li>
+                <li>we needed to add a realtime channel</li>
+                <li>we didn't want to drastically increase client
+                  complexity</li>
+              </ul>
+            </aside>
+          </section>
+        </section>
+        <section>
+          <h2 class="light">let's talk about</h2>
+          <h1>the web</h1>
+          <aside class="notes">
+            <ul>
+              <li>Now that you have some understanding of the problem we were
+                trying to solve, let's pull back a bit and talk about the web
+                and the direction it's going.</li>
+            </ul>
+          </aside>
+        </section>
+        <section>
+          <section>
             <h2 class="light">the web is</h2>
             <h1>service oriented</h1>
+            <aside class="notes">
+              <ul>
+              </ul>
+            </aside>
           </section>
           <section>
             <header>
@@ -76,16 +138,16 @@
               <h2>to this</h2>
             </header>
             <img src="img/soa-hell.png">
-            <!-- TODO: diagram of SOA with browser consumer -->
           </section>
           <section>
             <header>
               <h2>er, this</h2>
             </header>
             <img src="img/soa.svg" height="600">
-            <!-- TODO: diagram of SOA with browser consumer -->
             <aside class="notes">
               <ul>
+                <li>A single service is potentially comprised of many
+                  processes</li>
                 <li>Services (mostly) talk HTTP to each other</li>
                 <li>Pubsub (usually via redis) allows efficient 1:many
                   communication between services</li>
@@ -114,7 +176,14 @@
           <section>
             <header><h2>best practices</h2></header>
             <img src="img/http-api-design-guide-toc.png">
-            <!-- TODO: gradient fade image -->
+            <aside class="notes">
+              <ul>
+                <li>This is part of the table of contents for Heroku's HTTP API
+                design document.</li>
+                <li>There's all kinds of stuff in here to help you build a great
+                API.</li>
+              </ul>
+            </aside>
           </section>
           <section>
             <h2>platform play is table stakes</h2>
@@ -132,6 +201,10 @@
           <section>
             <h2 class="light">the web is</h2>
             <h1>realtime</h1>
+            <aside class="notes">
+              <ul>
+              </ul>
+            </aside>
           </section>
           <section>
             <h2>responsiveness is an expectation</h2>
@@ -191,6 +264,10 @@
           <section>
             <h2 class="light">the web is</h2>
             <h1>&hellip; complicated</h1>
+            <aside class="notes">
+              <ul>
+              </ul>
+            </aside>
           </section>
           <section>
             <h2>platform 🆚 realtime</h2>
@@ -221,6 +298,13 @@
         <section>
           <section>
             <h1>reframing the problem</h1>
+            <aside class="notes">
+              <ul>
+                <li>We've outlined a bit of the mess we're in with regard to web
+                app architecture. Before we dig into solutions, let's take a
+                moment to reframe the problem.</li>
+              </ul>
+            </aside>
           </section>
           <section>
             <h2>events are a proxy for state change</h2>
@@ -233,7 +317,7 @@
                   itself would be useless.</li>
                 <li>The reason we tend to think in terms of events is because it
                   makes more sense to our causal-driven brains. Computers
-                  don't care about causality.</li>
+                  care about data flow, not causality.</li>
                 <li>This creates an implicit contract based on derivation of
                   cause-effect relationships in our code. That's why it's so
                   difficult to understand, maintain, and untangle!</li>
@@ -273,24 +357,354 @@
         <section>
           <section>
             <h1>a better way</h1>
+            <aside class="notes">
+              <ul>
+                <li>You're probably able to guess at what all this is leading
+                  to. There's a better way to solve our problem of adding a
+                  realtime transport without making our client app too
+                  complex.</li>
+              </ul>
+            </aside>
           </section>
           <section>
-            <h2>realtime producer = REST consumer</h2>
+            <h2>let's review</h2>
+            <img src="img/common-push-architecture.svg" height="600">
+            <aside class="notes">
+              <ul>
+                <li>pubsub channel per user</li>
+                <li>user authenticates to stream producer with a private key
+                  which is passed on to an identity service for
+                  verification</li>
+                <li>stream producer subscribes to the user-specific pubsub
+                  channel</li>
+                <li>events are published to that channel and flow down to the
+                  client</li>
+                <li>the client has logic to deal with each event type</li>
+              </ul>
+          </section>
+          <section>
+            <h2>realtime producer as REST consumer</h2>
+            <img src="img/rest-push-architecture.svg">
+            <aside class="notes">
+              <ul>
+                <li>pubsub channel per endpoint</li>
+                <li>client asks stream producer to subscribe to REST endpoints on
+                  its behalf</li>
+                <li>On a state change event, all relevant endpoint channels are
+                  published to</li>
+                <li>those REST payloads are tunneled to the client via the stream
+                  producer</li>
+                <li>the client deals with them the same way it would had it
+                  requested the payload via AJAX</li>
+              </ul>
+            </aside>
           </section>
         </section>
         <section>
           <section>
-            <h1>problems</h1>
+            <h1>challenges</h1>
+            <aside class="notes">
+              <ul>
+                <li>No solution is a panacea, and no analogy is perfect.</li>
+                <li>Let's look at some of the challenges we faced when
+                  implementing this techique.</li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>isolating data mutation</h2>
+            <aside class="notes">
+              <ul>
+                <li>This is simple if you have 1 source of truth (rdbms) and 1
+                  API service which writes to it:</li>
+                <li>Most ORMs have hooks after saving a model instance to the
+                  database. Register a global post-save hook and you've isolated
+                  all data mutation.</li>
+                <li>Otherwise, you need a data service which all other services
+                  interact with to mutate data.</li>
+              </ul>
+            </aside>
           </section>
           <section>
             <h2>authentication</h2>
+            <aside class="notes">
+              <ul>
+                <li>If we no longer have a channel per user, how do we verify
+                  that the endpoint the client is asking to subscribe to is
+                  allowed?</li>
+                <li>Our REST API already has auth built in, so let it solve the
+                  problem!</li>
+                <li>2 common client auth mechanisms: session cookie or access
+                  token</li>
+                <li>cient passes auth along to stream produer, producer issues a
+                  HEAD request to REST API</li>
+                <li>If 200, then valid subscribe request</li>
+              </ul>
+            </aside>
           </section>
           <section>
             <h2>what API endpoints changed?</h2>
+            <aside class="notes">
+              <ul>
+                <li>The hardest part: requires active participation on the part
+                  of the REST API</li>
+                <li>Registry of model : endpoints needed, describing how to get
+                  from a model instance to a the endpoint url</li>
+                <li>Once that registry has been created, you simply iterate
+                  through the the associated endpoint generators for a model
+                  type and render the REST paths. You end up with a full list of
+                  modified API endpoints.</li>
+            </aside>
           </section>
           <section>
             <h2>performance</h2>
+            <aside class="notes">
+              <ul>
+                <li>One model instance can affect many endpoints. Obviously this
+                becomes expensive to compute if the data changes frequently.</li>
+                <li>Computing just the endpoint paths is cheap. Then check to
+                  ensure an endpoint has a subscriber before rendering its
+                  payload.</li>
+                <li>Push the endpoint rendering off to a work queue if it's too
+                  expensive to do synchronously.</li>
+              </ul>
+            </aside>
           </section>
+        </section>
+        <section>
+          <h1>server implementation</h1>
+          <h2 class="light">let's look at some code</h2>
+          <aside class="notes">
+            <ul>
+              <li>Django ORM hooks</li>
+              <li>URL Registry</li>
+              <li>Node.js socket server</li>
+            </ul>
+          </aside>
+        </section>
+        <section>
+          <h1>the client</h1>
+        </section>
+        <section>
+          <section>
+            <h1>react.js</h1>
+            <h2>a digression</h2>
+          </section>
+          <section>
+            <h2>why react?</h2>
+            <aside class="notes">
+              <ul>
+                <li>this technique can be used with any client framework</li>
+                <li>in fact, one of its strengths is its ability to plug into
+                  existing infrastructure</li>
+                <li>I believe react.js (along with flux and immutable js) is the
+                  ideal choice of client tech for this purpose</li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>built for data mutation over time</h2>
+            <aside class="notes">
+              <ul>
+                <li>react handles propagation of state down through hierarchies
+                  of components extremely well</li>
+                <li>because react effectively re-renders your entire component
+                  on every state change, you know your UI always accurately
+                  reflects state</li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>the shadow dom</h2>
+            <aside class="notes">
+              <ul>
+                <li>react's super-power</li>
+                <li>makes it not only feasible but FAST to re-render components
+                  every single time</li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>server-side rendering</h2>
+            <aside class="notes">
+              <ul>
+                <li>not directly applicable here, but obvious for any api
+                  consuming client</li>
+                <li>drastically reduces time to usable page load</li>
+                <li>requires very little code to implement (provided the vast
+                  majority of your markup is in react components)</li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>uni-directional data flow</h2>
+            <aside class="notes">
+              <ul>
+                <li>this is the big one for our purposes</li>
+                <li>think of the complexities 2-way data binding would introduce
+                  to an app whose state is being pushed to it</li>
+                <li>uni-directional data flow guarantees that all data coming
+                  into your app, no matter the source, will be accurately
+                  represented in your UI. It's just that simple.</li>
+              </ul>
+            </aside>
+          </section>
+        </section>
+        <section>
+          <section>
+            <h1>flux architecture</h1>
+            <img src="img/flux.png">
+            <aside class="notes">
+              <ul>
+                <li>react is fairly common, so I didn't want to spend a lot of
+                  time going over the basics</li>
+                <li>flux is less generally understood, and it's more important
+                  to my demonstration, so let's review its basics</li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>view</h2>
+            <aside class="notes">
+              <ul>
+                <li>essentially react components, but in flux architectures,
+                  views are commonly rendered hierarchically</li>
+                <li>a parent view receives events from a store (explanation
+                  forthcoming) and calls its own setState to re-render
+                  itself</li>
+                <li>the entire state is then passed down to child views so that
+                  ui changes naturally flow uni-directionally down the
+                  dependency chanin</li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>store</h2>
+            <aside class="notes">
+              <ul>
+                <li>a data store, similar to a model, but think of a store as a
+                  table, not a row</li>
+                <li>stores register themselves with dispatchers (explanation
+                  forthcoming) so that when data changes, they are notified</li>
+                <li>once the store is updated, it emits an event that is
+                  commonly used by views (components) to re-render
+                  themselves</li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>dispatcher</h2>
+            <aside class="notes">
+              <ul>
+                <li>Like the name sounds, the dispatcher is responsible for
+                  invoking callbacks registered by other components.</li>
+                <li>When an action (explanation forthcoming) receives new data,
+                  it calls the dispatch method</li>
+                <li>Since stores commonly register themselves with the
+                  dispatcher, their callback is called when the dispatch method
+                  is invoked</li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>actions</h2>
+            <aside class="notes">
+              <ul>
+                <li>in generic terms, an action's job is to provide data to the
+                  dispatcher</li>
+                <li>practically speaking, you can think of it as your REST API
+                  client</li>
+                <li>this is part of what makes flux such a natural fit for our
+                  realtime channel: all we need to do is get data to our
+                  actions</li>
+                <li>Actions may be called in response to a view's event handler.
+                  This is how react avoids 2-way data binding without
+                  sacrificing user interactivity.</li>
+              </ul>
+            </aside>
+          </section>
+        </section>
+        <section>
+          <h1>client implementation</h1>
+          <h2 class="light">more code diving</h2>
+          <aside class="notes">
+            <ul>
+              <li>items store -&gt; crud store -&gt; base store</li>
+              <li>items actions -&gt; crud actions -&gt; base actions</li>
+              <li>items views</li>
+              <li>api subscription service</li>
+            </ul>
+          </aside>
+        </section>
+        <section>
+          <h1>live demo time</h1>
+          <aside class="notes">
+            <ul>
+              <li>page initial render</li>
+              <li>curl API PUT, POST, DELETE</li>
+            </ul>
+          </aside>
+        </section>
+        <section>
+          <section>
+            <h1>drawbacks</h1>
+          </section>
+          <section>
+            <h2>http method is a stretched analogy</h2>
+            <aside class="notes">
+              <ul>
+                <li>it works (mostly), but the methods are meant for requests,
+                  not responses</li>
+                <li>you can begin to see it break down with PUT vs POST, and it
+                  further degenerates when you begin to think about PATCH</li>
+                <li>I've presented a purist view of this technique, but there
+                  are some practical things that can be done to shore up the
+                  analogy.</li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>clients must maintain a list of subscriptions</h2>
+            <aside class="notes">
+              <ul>
+                <li>this list can get fairly large, and without sticky sessions,
+                  any socket disconnect means resubscribing to all channels</li>
+                <li>it's somewhat difficult to answer the question "how do I
+                  know when there's something new I should subscribe to?".
+                  Ideally, list endpoints would act like a PATCH for new members
+                  (again stretching the http method analogy).</li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>beware the race conditions</h2>
+            <aside class="notes">
+              <ul>
+                <li>always use a "last modified" timestamp in the data
+                  store</li>
+                <li>always inspect the client timestamp against the one in the
+                  socket payload to avoid overwriting with older state</li>
+              </ul>
+            </aside>
+          </section>
+        </section>
+        <section>
+          <section>
+            <h1>tl;dl</h1>
+          </section>
+          <section>
+            <h2>realtime API mirrors REST API</h2>
+          </section>
+          <section>
+            <h2>client consumer doesn't care about push vs pull</h2>
+          </section>
+          <section>
+            <h2>data service triggers the publishing of REST endpoints</h2>
+          </section>
+        </section>
+        <section>
+          <h1>Questions?</h1>
+        </section>
       </div>
     </div>
 
