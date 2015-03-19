@@ -1,0 +1,10 @@
+django==1.6.8
+dj-database-url
+django-filter
+django-pgfields
+djangorestframework==2.3.13
+redis==2.9.1
+psycopg2==2.4.6
+cryptography==0.5.4
+cffi==0.8.6
+
